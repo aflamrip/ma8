@@ -1,0 +1,19 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true,
+      "automergeType": "branch"
+    },
+    {
+      "matchPackageNames": ["astro", "@astrojs/cloudflare"],
+      "groupName": "astro core"
+    }
+  ],
+  "timezone": "UTC",
+  "schedule": ["at any time"]
+}

@@ -1,0 +1,119 @@
+---
+import PlyrComponent from './Plyr.svelte';
+import { CDN_URLS } from '../lib/constants';
+
+interface Props {
+  type: 'movie' | 'tv';
+  prefix?: string;
+  id: string;
+  season?: string;
+  episode?: string;
+}
+
+const { type, prefix = 'p', id, season, episode } = Astro.props;
+
+let videoUrl = '';
+let subtitleUrl = '';
+
+try {
+  const isMovie = type === 'movie' || type === 'movies';
+  const pluralType = isMovie ? 'movies' : 'tv';
+  const seasonPadded = season ? season.padStart(2, '0') : '01';
+  
+  // Build CDN ndjson URL (from STATIC CDN)
+  // For TV, the cdn.sXX.ndjson is in the root of the movie folder as per user request
+  let url = `${CDN_URLS.STATIC}/${pluralType}/${prefix}/${id}/cdn.ndjson`;
+  if (type === 'tv' && season) {
+    url = `${CDN_URLS.STATIC}/${pluralType}/${prefix}/${id}/cdn.s${seasonPadded}.ndjson`;
+  }
+  
+  console.log(`[PlayerIsland] Fetching meta: ${url}`);
+  const res = await fetch(url);
+  
+  if (res.ok) {
+    const dataText = await res.text();
+    const lines = dataText.split('\n').filter(l => l.trim().length > 0);
+    
+    let data;
+    if (type === 'tv' && episode) {
+      data = lines.map(l => JSON.parse(l)).find(d => d.episode?.toString() === episode.toString());
+    } else {
+      data = JSON.parse(lines[0]);
+    }
+
+    if (data && data.url) {
+      const seasonPadded = season ? season.toString().padStart(2, '0') : '01';
+      const epNum = episode ? episode.toString() : (data.episode?.toString() || '1');
+
+      // Initial raw path from metadata
+      let cleanPath = data.url;
+
+      // Construct and sanitize the path by replacing all placeholders
+      cleanPath = cleanPath
+        .replace(/\[type\]/g, pluralType)
+        .replace(/{type}/g, pluralType)
+        .replace(/\/movie\//g, '/movies/') // Aggressive pluralization
+        .replace(/\[prefix\]/g, prefix)
+        .replace(/{prefix}/g, prefix)
+        .replace(/\[id\]/g, id)
+        .replace(/{id}/g, id)
+        .replace(/{season}/g, seasonPadded || '01')
+        .replace(/{episode}/g, epNum || '1');
+
+      // Final adjustment for the season folder sub-directory
+      // We check multiple signals to ensure it's a movie or TV
+      const isActuallyTV = type === 'tv' || cleanPath.includes('/tv/');
+      
+      if (!isActuallyTV) {
+        // MOVIE LOGIC: Ensure NO /sXX/ folder exists
+        // We remove it from the final resolved cleanPath
+        cleanPath = cleanPath.replace(/\/s\d+\//g, '/');
+      } else {
+        // TV LOGIC: Ensure /sXX/ folder exists
+        if (!cleanPath.includes(`/s${seasonPadded}/`)) {
+          // If missing, inject it after the ID segment
+          cleanPath = cleanPath.replace(new RegExp(`/${id}/`, 'g'), `/${id}/s${seasonPadded}/`);
+        }
+      }
+      
+      // Final Cleanup: Remove leading slashes and normalize mid-path double slashes
+      if (cleanPath.includes('://')) {
+        const parts = cleanPath.split('://');
+        cleanPath = parts[0] + '://' + parts[1].replace(/\/\/+/g, '/');
+      } else {
+        cleanPath = cleanPath.replace(/\/\/+/g, '/');
+      }
+      cleanPath = cleanPath.replace(/^\/+/, ''); // Remove all leading slashes
+
+      if (!cleanPath.startsWith('http')) {
+        const domain = CDN_URLS.VIDEO.replace(/\/$/, '');
+        videoUrl = `${domain}/${cleanPath}`;
+      } else {
+        videoUrl = cleanPath;
+      }
+      
+      console.log(`[PlayerIsland] Final Video URL: ${videoUrl}`);
+    }
+  }
+
+  // Final Subtitle path attempt: s001.mogcdn.com + /[type]/{prefix}/{id}/ar.vtt
+  subtitleUrl = `${CDN_URLS.VIDEO.replace(/\/$/, '')}/${pluralType}/${prefix}/${id}/ar.vtt`;
+
+} catch (e) {
+  console.error("[PlayerIsland] Error:", e);
+}
+---
+
+<div class="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl relative border border-zinc-800">
+  {videoUrl ? (
+     <PlyrComponent client:only="svelte" src={videoUrl} subtitle={subtitleUrl} />
+  ) : (
+    <div class="absolute inset-0 flex items-center justify-center bg-zinc-900">
+      <div class="flex flex-col items-center gap-4">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p class="text-zinc-400">جاري تحميل الفيلم/الحلقة...</p>
+        <p class="text-zinc-600 text-xs">إذا لم يظهر المشغل، تأكد من توفر ملف CDN</p>
+      </div>
+    </div>
+  )}
+</div>
