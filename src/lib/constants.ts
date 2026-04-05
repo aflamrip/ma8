@@ -16,22 +16,17 @@ export async function getDynamicContent(type: 'movie' | 'tv', pageCount = 3) {
     const pluralType = type.startsWith('movie') ? 'movies' : 'tv';
     const pages = Array.from({ length: pageCount }, (_, i) => `index.${i + 1}.ndjson`);
 
-    // 4- Server Island + Batch API (Concurrent dynamic requests)
-    const fetchPromises = pages.map(file => {
-      // 5- Cache + Edge
-      // @ts-ignore - Cloudflare Worker options
-      return fetch(`${CDN_URLS.STATIC}/${pluralType}/${file}`, {
-        cf: { cacheEverything: true, cacheTtl: 14400 }
-      }).then(r => r.ok ? r : null).catch(() => null);
-    });
-
-    const responses = await Promise.all(fetchPromises);
-    const validResponses = responses.filter(r => r !== null) as Response[];
-
     const allItems: any[] = [];
 
-    for (const res of validResponses) {
+    for (const file of pages) {
       try {
+        // @ts-ignore
+        const res = await fetch(`${CDN_URLS.STATIC}/${pluralType}/${file}`, {
+            cf: { cacheEverything: true, cacheTtl: 14400 }
+        });
+        
+        if (!res.ok) continue;
+
         const text = await res.text();
         const lines = text.split('\n').filter(l => l.trim().length > 0);
         
@@ -53,6 +48,7 @@ export async function getDynamicContent(type: 'movie' | 'tv', pageCount = 3) {
               data['title-ar'] = data.arabic_title;
               data.original_title = raw.original_title || raw.name || '';
               data.title = raw.title || raw.name || '';
+              data.published = raw.published || raw.date || raw.release_date || null;
               data.lang = raw.lang || 'ar';
 
               const yearRaw = findValue(['year', 'release_date', 'date', 'published']) || '2026';
@@ -83,37 +79,31 @@ export async function getDynamicContent(type: 'movie' | 'tv', pageCount = 3) {
 export async function getDynamicItemBySlug(type: 'movie' | 'tv', slug: string, pageCount = 10) {
   try {
     const pluralType = type.startsWith('movie') ? 'movies' : 'tv';
-
-    // 4- Server Island + Batch API (Parallel fetch)
-    const fetchPromises = Array.from({ length: pageCount }, (_, i) => {
-      // 5- Cache + Edge
-      // @ts-ignore - Cloudflare request options
-      return fetch(`${CDN_URLS.STATIC}/${pluralType}/index.${i + 1}.ndjson`, {
-        cf: { cacheEverything: true, cacheTtl: 14400 }
-      }).then(r => r.ok ? r : null).catch(() => null);
-    });
-    const responses = await Promise.all(fetchPromises);
-    const validResponses = responses.filter(r => r !== null) as Response[];
-
-    // 3- Live Loader + can-ndjson-stream
     let foundInIndex: any = null;
 
-    // 2- Content Layer Eager Search
-    for (const res of validResponses) {
-      if (foundInIndex) break;
-      try {
-        const stream = await ndjsonStream(res.body);
-        const reader = stream.getReader();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          // Eager parsing match
-          if (value && value.slug === slug) {
-            foundInIndex = value;
-            break;
-          }
-        }
-      } catch (e) { }
+    // 2- Content Layer Eager Search (Sequential for memory safety)
+    for (let i = 0; i < pageCount; i++) {
+        if (foundInIndex) break;
+        try {
+            // @ts-ignore
+            const res = await fetch(`${CDN_URLS.STATIC}/${pluralType}/index.${i + 1}.ndjson`, {
+                cf: { cacheEverything: true, cacheTtl: 14400 }
+            });
+            if (!res.ok) continue;
+
+            const text = await res.text();
+            const lines = text.split('\n').filter(l => l.trim().length > 0);
+            
+            for (const line of lines) {
+                try {
+                    const value = JSON.parse(line);
+                    if (value && value.slug === slug) {
+                        foundInIndex = value;
+                        break;
+                    }
+                } catch (e) {}
+            }
+        } catch (e) {}
     }
 
     if (foundInIndex) {
