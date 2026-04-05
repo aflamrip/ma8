@@ -34,7 +34,7 @@ export async function GET(context: any) {
       ];
     } 
     else if (typeKey === 'movies' || isVideoMap) {
-      const all = await getSitemapData('movie', 100);
+      const all = await getSitemapData('movie', 20);
       const totalPages = Math.max(1, Math.ceil(all.length / ITEMS_PER_SITEMAP));
       if (page > totalPages) return new Response('Range Out', { status: 404 });
       
@@ -46,7 +46,7 @@ export async function GET(context: any) {
       }
     } 
     else if (typeKey === 'series' || typeKey === 'tv') {
-      const all = await getSitemapData('tv', 100);
+      const all = await getSitemapData('tv', 20);
       const totalPages = Math.max(1, Math.ceil(all.length / ITEMS_PER_SITEMAP));
       if (page > totalPages) return new Response('Range Out', { status: 404 });
       
@@ -54,7 +54,7 @@ export async function GET(context: any) {
       urls = chunk.map(t => `${currentSite}/tv/${t.data.slug}`);
     } 
     else if (typeKey === 'seasons' || typeKey === 'episodes') {
-      const all = await getSitemapData('tv', 50);
+      const all = await getSitemapData('tv', 20);
       const totalPages = Math.max(1, Math.ceil(all.length / ITEMS_PER_SITEMAP));
       if (page > totalPages) return new Response('Range Out', { status: 404 });
       

@@ -28,51 +28,49 @@ export async function getDynamicContent(type: 'movie' | 'tv', pageCount = 3) {
     const responses = await Promise.all(fetchPromises);
     const validResponses = responses.filter(r => r !== null) as Response[];
 
-    // 3- Live Loader + can-ndjson-stream
     const allItems: any[] = [];
 
-    // 2- Content Layer + Eager Loading (Stream live processing)
     for (const res of validResponses) {
-      const stream = await ndjsonStream(res.body);
-      const reader = stream.getReader();
+      try {
+        const text = await res.text();
+        const lines = text.split('\n').filter(l => l.trim().length > 0);
+        
+        for (const line of lines) {
+          try {
+            const rawD = JSON.parse(line);
+            if (rawD) {
+              const raw = rawD.data && typeof rawD.data === 'object' ? { ...rawD, ...rawD.data } : rawD;
+              const data: any = { ...raw };
 
-      while (true) {
-        const { done, value: rawD } = await reader.read();
-        if (done) break;
+              const findValue = (keys: string[]) => {
+                for (const k of keys) {
+                  if (raw[k]) return raw[k];
+                }
+                return null;
+              };
 
-        if (rawD) {
-          const raw = rawD.data && typeof rawD.data === 'object' ? { ...rawD, ...rawD.data } : rawD;
-          const data: any = { ...raw };
+              data.arabic_title = findValue(['title_ar', 'title-ar', 'arabic_title']);
+              data['title-ar'] = data.arabic_title;
+              data.original_title = raw.original_title || raw.name || '';
+              data.title = raw.title || raw.name || '';
+              data.lang = raw.lang || 'ar';
 
-          const findValue = (keys: string[]) => {
-            for (const k of keys) {
-              if (raw[k]) return raw[k];
+              const yearRaw = findValue(['year', 'release_date', 'date', 'published']) || '2026';
+              data.year = yearRaw.toString().substring(0, 4);
+              data.overview = findValue(['overview', 'plot', 'summary', 'description', 'story', 'info', 'qessa', 'content']) || '';
+              data.genres = Array.isArray(raw.genres) ? raw.genres : (raw.genre ? [raw.genre] : []);
+              data.slug = raw.slug || (data.title ? data.title.toLowerCase().replace(/\s+/g, '-') : '');
+              data.director = raw.director || null;
+              data.cast = Array.isArray(raw.cast) ? raw.cast : [];
+
+              allItems.push({
+                id: (raw.id || rawD.id || '').toString(),
+                data
+              });
             }
-            return null;
-          };
-
-          data.arabic_title = findValue(['title_ar', 'title-ar', 'arabic_title']);
-          data['title-ar'] = data.arabic_title; // normalize both key formats
-          data.original_title = raw.original_title || raw.name || '';
-
-          // Keep original title field intact (Arabic for ar, English for en)
-          data.title = raw.title || raw.name || '';
-          data.lang = raw.lang || 'ar';
-
-          const yearRaw = findValue(['year', 'release_date', 'date', 'published']) || '2026';
-          data.year = yearRaw.toString().substring(0, 4);
-          data.overview = findValue(['overview', 'plot', 'summary', 'description', 'story', 'info', 'qessa', 'content']) || '';
-          data.genres = Array.isArray(raw.genres) ? raw.genres : (raw.genre ? [raw.genre] : []);
-          data.slug = raw.slug || (data.title ? data.title.toLowerCase().replace(/\s+/g, '-') : '');
-          data.director = raw.director || null;
-          data.cast = Array.isArray(raw.cast) ? raw.cast : [];
-
-          allItems.push({
-            id: (raw.id || rawD.id || '').toString(),
-            data
-          });
+          } catch (e) {}
         }
-      }
+      } catch (e) {}
     }
     return allItems;
   } catch (e) {
