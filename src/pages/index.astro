@@ -1,5 +1,4 @@
 ---
-import { Image } from 'astro:assets';
 import Layout from '../layouts/Layout.astro';
 import { CDN_URLS, getPrefix, getDynamicContent } from '../lib/constants';
 
@@ -34,13 +33,14 @@ Astro.response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-
         {arabicMovies.map(movie => (
           <a href={`/movie/${movie.data.slug}`} class="group">
              <div class="aspect-[2/3] rounded-2xl overflow-hidden relative shadow-2xl border border-zinc-800/50 group-hover:border-primary/50 transition-all duration-500">
-                <Image 
+                <img 
                   src={`${CDN_URLS.STATIC}/movies/${getPrefix(movie.id)}/${movie.id}/${movie.id}.webp`}
                   alt={movie.data.title}
-                  width={300}
-                  height={450}
+                  width="300"
+                  height="450"
                   class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   loading="lazy"
+                  decoding="async"
                 />
                 <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-60"></div>
                 <div class="absolute bottom-0 p-4 w-full translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
@@ -70,13 +70,14 @@ Astro.response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-
         {foreignMovies.map(movie => (
           <a href={`/movie/${movie.data.slug}`} class="group">
              <div class="aspect-[2/3] rounded-2xl overflow-hidden relative shadow-2xl border border-zinc-800/50 group-hover:border-blue-500/50 transition-all duration-500">
-                <Image 
+                <img 
                   src={`${CDN_URLS.STATIC}/movies/${getPrefix(movie.id)}/${movie.id}/${movie.id}.webp`}
                   alt={movie.data.title}
-                  width={300}
-                  height={450}
+                  width="300"
+                  height="450"
                   class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   loading="lazy"
+                  decoding="async"
                 />
                 <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-60"></div>
                 <div class="absolute bottom-0 p-4 w-full translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
@@ -106,13 +107,14 @@ Astro.response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-
         {arabicSeries.map(show => (
           <a href={`/tv/${show.data.slug}`} class="group">
              <div class="aspect-[2/3] rounded-2xl overflow-hidden relative shadow-2xl border border-zinc-800/50 group-hover:border-emerald-500/50 transition-all duration-500">
-                <Image 
+                <img 
                   src={`${CDN_URLS.STATIC}/tv/${getPrefix(show.id)}/${show.id}/${show.id}.webp`}
                   alt={show.data.title}
-                  width={300}
-                  height={450}
+                  width="300"
+                  height="450"
                   class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   loading="lazy"
+                  decoding="async"
                 />
                 <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-60"></div>
                 <div class="absolute bottom-0 p-4 w-full translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
@@ -142,13 +144,14 @@ Astro.response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-
         {foreignSeries.map(show => (
           <a href={`/tv/${show.data.slug}`} class="group">
              <div class="aspect-[2/3] rounded-2xl overflow-hidden relative shadow-2xl border border-zinc-800/50 group-hover:border-amber-500/50 transition-all duration-500">
-                <Image 
+                <img 
                   src={`${CDN_URLS.STATIC}/tv/${getPrefix(show.id)}/${show.id}/${show.id}.webp`}
                   alt={show.data.title}
-                  width={300}
-                  height={450}
+                  width="300"
+                  height="450"
                   class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   loading="lazy"
+                  decoding="async"
                 />
                 <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-60"></div>
                 <div class="absolute bottom-0 p-4 w-full translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
