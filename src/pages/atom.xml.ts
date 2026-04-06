@@ -1,8 +1,8 @@
-import { getSitemapData, getFullSiteUrl, CDN_URLS, getPrefix } from '../lib/constants';
+import { getSitemapData, getFullSiteUrl, CDN_URLS, getPrefix, formatDateWithOffset } from '../lib/constants';
 
 export async function GET(context: any) {
   const currentSite = getFullSiteUrl(context);
-  const now = new Date().toISOString();
+  const now = formatDateWithOffset();
   
   const movies = await getSitemapData('movie', 2);
   const series = await getSitemapData('tv', 2);
@@ -28,7 +28,7 @@ export async function GET(context: any) {
       <id>${url}</id>
       <updated>${now}</updated>
       <summary>${item.data.overview || `مشاهدة ${item.data.title} على معاك سيما.`}</summary>
-      <author><name>معاك سيما</name></author>
+	  <author><name>معاك سيما</name></author>
       <content type="html"><![CDATA[<img src="${thumbUrl}" alt="${item.data.title}" /><br/>${directorHtml}${castHtml}<p>${item.data.overview || ''}</p>]]></content>
     </entry>`;
   }).join('');
