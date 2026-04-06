@@ -16,7 +16,7 @@ export async function GET(context: any) {
 
   const [, rawType, pageNumStr] = match;
   const page = parseInt(pageNumStr, 10);
-  const ITEMS_PER_SITEMAP = 10000;
+  const ITEMS_PER_SITEMAP = 50000;
 
   const typeKey = rawType.replace(/^sitemap-/, '');
 

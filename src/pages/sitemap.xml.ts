@@ -10,8 +10,15 @@ export async function GET(context: any) {
     const currentSite = getFullSiteUrl(context);
     const now = new Date().toISOString();
 
-    const moviePages = 5; 
-    const tvPages = 5;
+    // Secure dynamic calculation (Max 45 total subrequests for Worker safety)
+    const movies = await getSitemapData('movie', 20);
+    const tv = await getSitemapData('tv', 20);
+    
+    // Google standard: 50,000 URLs per sitemap
+    const ITEMS_PER_SITEMAP = 50000;
+    
+    const moviePages = Math.max(1, Math.ceil(movies.length / ITEMS_PER_SITEMAP));
+    const tvPages = Math.max(1, Math.ceil(tv.length / ITEMS_PER_SITEMAP));
 
     const getLinks = (type: string, totalPages: number) => {
       return Array.from({ length: totalPages }, (_, i) => `${currentSite}/sitemap-${type}${i + 1}.xml`);
