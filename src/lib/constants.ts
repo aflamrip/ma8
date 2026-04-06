@@ -250,12 +250,27 @@ export function getSeoPromo(id: string | number): string {
 }
 
 /** Specialized fetcher for SiteMap & Feeds: fetches many more indices for maximum coverage */
-export async function getSitemapData(type: 'movie' | 'tv', pageCount = 40) {
+export async function getSitemapData(type: 'movie' | 'tv', pageCount = 45) {
   const items = await getDynamicContent(type, pageCount);
   return items;
 }
 
 export function getFullSiteUrl(context: any): string {
+  // Try to get origin from the current request (dynamic)
+  if (context.url && context.url.origin) {
+    return context.url.origin.replace(/\/$/, '');
+  }
+  // Fallback to static site config
   const site = context.site ? context.site.toString().replace(/\/$/, '') : 'https://ma3ak.top';
   return site;
+}
+
+/** Formats date to YYYY-MM-DDTHH:mm:ss+03:00 for Arabic SEO targeting */
+export function formatDateWithOffset(dateInput?: Date | string | number): string {
+  const date = dateInput ? new Date(dateInput) : new Date();
+  // KSA/Egypt Offset (+03:00)
+  const offsetMs = 3 * 60 * 60 * 1000;
+  const localDate = new Date(date.getTime() + offsetMs);
+  const iso = localDate.toISOString(); // YYYY-MM-DDTHH:mm:ss.sssZ
+  return iso.substring(0, 19) + "+03:00";
 }

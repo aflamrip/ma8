@@ -30,7 +30,7 @@ export async function GET(context: any) {
       ...getLinks('series', tvPages),
       ...getLinks('seasons', tvPages),
       ...getLinks('episodes', tvPages),
-      ...Array.from({ length: moviePages }, (_, i) => `${currentSite}/video-sitemap${i + 1}.xml`),
+      ...getLinks('video', moviePages),
       `${currentSite}/sitemap-cast1.xml`,
     ];
 

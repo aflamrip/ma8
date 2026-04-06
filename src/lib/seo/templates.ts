@@ -1,4 +1,4 @@
-import { CDN_URLS, getPrefix } from '../constants';
+import { CDN_URLS, getPrefix, formatDateWithOffset } from '../constants';
 
 export interface SeoMetadata {
   title: string;
@@ -50,10 +50,9 @@ const getPosterUrl = (item: any, type: 'movie' | 'tv') => {
 const getFormattedDates = (item: any) => {
   let ts = Number(item.data?.publish_date_timestamp || Date.now() / 1000);
   if (ts > 9999999999) ts = ts / 1000;
-  const date = new Date(ts * 1000);
   return {
-    pubDate: date.toISOString(),
-    modDate: new Date().toISOString()
+    pubDate: formatDateWithOffset(ts * 1000),
+    modDate: formatDateWithOffset()
   };
 };
 
