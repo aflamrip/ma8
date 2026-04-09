@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "astro": {
+      "enabled": true
+    }
+  }
+}
